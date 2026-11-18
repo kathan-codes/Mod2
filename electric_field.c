@@ -1,14 +1,14 @@
 /*
- * Module 2: Electric Field Calculator
+ * Module 2: Electric Field Calculator (Interactive Version)
  * Course: IC103 Programming Project
  * File: electric_field.c
  *
  * Description:
- * Rebuilt single-file implementation of Module 2.
+ * Rebuilt single-file interactive implementation of Module 2.
  * Calculates individual electric fields, resultant field, external field
  * superposition, reference point recalculations, and shortest distance
- * for target field magnitude. All shared arrays and functions are public (non-static)
- * so Modules 3, 4 and later can access them directly.
+ * for target field magnitude. All shared arrays and functions are public
+ * (non-static) so other modules can access them directly.
  */
 
 #include <stdio.h>
@@ -18,7 +18,7 @@
 /* Physical constants for dry air (20 deg C, 101.325 kPa) */
 #define EPS0 8.8541878188e-12      /* Vacuum permittivity in F/m */
 #define EPS_R 1.0005364            /* Relative permittivity of dry air */
-#define PI 3.14159265358979323846  /* Pi */
+#define PI 3.14159265358979323846  /* Pi constant */
 #define MAX_CHARGES 100            /* Maximum supported charges */
 
 /* Globally accessible arrays for individual charge results (0-indexed: Charge 1 at index 0) */
@@ -28,7 +28,7 @@ double E_magnitude[MAX_CHARGES];
 double E_angle[MAX_CHARGES];
 int E_defined[MAX_CHARGES];
 
-/* Stored charge configuration from Module 1 */
+/* Stored charge configuration received from Module 1 */
 int num_charges = 0;
 double charges_q[MAX_CHARGES];
 double charges_x[MAX_CHARGES];
@@ -57,20 +57,18 @@ double net_magnitude = 0.0;
 double net_angle = 0.0;
 int net_defined = 0;
 
-/* Function prototypes (all public / non-static) */
+/* Function prototypes (all non-static / public) */
 double calculate_coulomb_constant(void);
 double calculate_angle(double ex, double ey, int *is_defined);
 void update_net_field(void);
 void calculate_electric_field(int n, const double q[], const double x[], const double y[], double rx, double ry);
 void change_reference_point(double new_x, double new_y);
 void set_external_field(double ex, double ey);
-void set_external_field_polar(double magnitude, double angle_deg);
 void clear_external_field(void);
 double calculate_shortest_distance(int charge_index, double desired_magnitude);
 double calculate_shortest_distance_by_id(int charge_id, double desired_magnitude);
 void display_results(void);
 void run_electric_field_calculator(int n, const double q[], const double x[], const double y[]);
-
 
 /*
  * Calculates Coulomb's constant in dry air:
@@ -228,32 +226,14 @@ void change_reference_point(double new_x, double new_y)
 }
 
 /*
- * Public function: Sets or changes external electric field by component values.
+ * Public function: Sets or changes external electric field by component values (Ex, Ey in N/C).
+ * Replaces any existing external field.
  */
 void set_external_field(double ex, double ey)
 {
     ext_Ex = ex;
     ext_Ey = ey;
-    ext_active = 1;
-    update_net_field();
-}
-
-/*
- * Public function: Sets or changes external electric field by magnitude (N/C)
- * and direction angle (degrees CCW from +X axis).
- */
-void set_external_field_polar(double magnitude, double angle_deg)
-{
-    if (magnitude <= 0.0)
-    {
-        clear_external_field();
-        return;
-    }
-
-    double rad = angle_deg * (PI / 180.0);
-    ext_Ex = magnitude * cos(rad);
-    ext_Ey = magnitude * sin(rad);
-    ext_active = 1;
+    ext_active = (hypot(ex, ey) > 1e-15);
     update_net_field();
 }
 
@@ -270,7 +250,7 @@ void clear_external_field(void)
 
 /*
  * Public function: Calculates shortest radial distance (in metres) from selected
- * charge (0-based index) where electric field magnitude equals desired_magnitude.
+ * charge (0-based index) where its electric field magnitude equals desired_magnitude.
  * Formula: E = k * |q| / r^2  =>  r = sqrt(k * |q| / E).
  * Excludes external field and other charges. Returns -1.0 if invalid.
  */
@@ -300,12 +280,12 @@ double calculate_shortest_distance_by_id(int charge_id, double desired_magnitude
 }
 
 /*
- * Public function: Prints summary of calculated electric fields to stdout.
+ * Public function: Displays formatted electric field results to the console.
  */
 void display_results(void)
 {
     printf("\n===============================================================\n");
-    printf("                  ELECTRIC FIELD CALCULATOR (MODULE 2)         \n");
+    printf("                  ELECTRIC FIELD RESULTS                       \n");
     printf("===============================================================\n");
     printf("Reference Point: (%.4f, %.4f) m\n\n", ref_x, ref_y);
     printf("--- Individual Charge Contributions ---\n");
@@ -366,18 +346,149 @@ void display_results(void)
 }
 
 /*
- * Public integration entry point if called by Module 1.
- * Prompts user for initial reference point and calculates fields.
+ * Public integration entry point called with charge data from Module 1.
+ * Prompts for initial reference point, performs initial calculations,
+ * and enters the repeating interactive menu until user selects Exit.
  */
 void run_electric_field_calculator(int n, const double q[], const double x[], const double y[])
 {
+    if (n <= 0 || q == NULL || x == NULL || y == NULL)
+    {
+        printf("Error: Invalid charge data received.\n");
+        return;
+    }
+
+    /* Consume any leftover newline in stdin from Module 1's scanf */
+    int ch;
+    while ((ch = getchar()) != '\n' && ch != EOF)
+    {
+        /* discard */
+    }
+
     double rx = 0.0;
     double ry = 0.0;
-    printf("\n[Module 2] Enter reference point X coordinate (m): ");
+    printf("\n[Module 2] Enter initial reference point X coordinate (m): ");
     if (scanf("%lf", &rx) != 1) rx = 0.0;
-    printf("[Module 2] Enter reference point Y coordinate (m): ");
+    printf("[Module 2] Enter initial reference point Y coordinate (m): ");
     if (scanf("%lf", &ry) != 1) ry = 0.0;
 
+    /* Initial calculation and display */
     calculate_electric_field(n, q, x, y, rx, ry);
     display_results();
+
+    /* Repeating Interactive Menu Loop */
+    while (1)
+    {
+        printf("\n=================================================\n");
+        printf("             ELECTRIC FIELD CALCULATOR           \n");
+        printf("=================================================\n\n");
+        printf("Current Reference Point: (%.4f, %.4f)\n\n", ref_x, ref_y);
+        printf("1. Display Electric Field Results\n");
+        printf("2. Change Reference Point\n");
+        printf("3. Set / Change External Electric Field\n");
+        printf("4. Clear External Electric Field\n");
+        printf("5. Calculate Shortest Distance\n");
+        printf("6. Exit Module 2\n\n");
+        printf("Enter your choice: ");
+
+        int choice;
+        if (scanf("%d", &choice) != 1)
+        {
+            /* Discard invalid input to avoid infinite loop */
+            while ((ch = getchar()) != '\n' && ch != EOF)
+            {
+                /* discard */
+            }
+            printf("Invalid input. Please enter a number between 1 and 6.\n");
+            continue;
+        }
+
+        if (choice == 1)
+        {
+            /* Option 1: Display current results */
+            display_results();
+        }
+        else if (choice == 2)
+        {
+            /* Option 2: Change reference point */
+            double new_x, new_y;
+            printf("\nEnter new reference point X coordinate (m): ");
+            if (scanf("%lf", &new_x) != 1) new_x = 0.0;
+            printf("Enter new reference point Y coordinate (m): ");
+            if (scanf("%lf", &new_y) != 1) new_y = 0.0;
+
+            change_reference_point(new_x, new_y);
+            display_results();
+        }
+        else if (choice == 3)
+        {
+            /* Option 3: Set / Change external electric field */
+            double ex, ey;
+            printf("\nEnter external electric field Ex (N/C): ");
+            if (scanf("%lf", &ex) != 1) ex = 0.0;
+            printf("Enter external electric field Ey (N/C): ");
+            if (scanf("%lf", &ey) != 1) ey = 0.0;
+
+            set_external_field(ex, ey);
+            printf("\nExternal electric field updated.\n");
+            display_results();
+        }
+        else if (choice == 4)
+        {
+            /* Option 4: Clear external electric field */
+            clear_external_field();
+            printf("\nExternal electric field cleared.\n");
+            display_results();
+        }
+        else if (choice == 5)
+        {
+            /* Option 5: Calculate shortest distance for target field */
+            printf("\nAvailable charges:\n");
+            for (int i = 0; i < num_charges; i++)
+            {
+                printf("  Charge %d: %+.4f microC at (%.4f, %.4f) m\n",
+                       i + 1, charges_q[i], charges_x[i], charges_y[i]);
+            }
+
+            int charge_id;
+            printf("Select charge number (1 to %d): ", num_charges);
+            if (scanf("%d", &charge_id) != 1 || charge_id < 1 || charge_id > num_charges)
+            {
+                printf("Invalid charge selection.\n");
+                continue;
+            }
+
+            double desired_mag;
+            printf("Enter desired electric field magnitude (N/C): ");
+            if (scanf("%lf", &desired_mag) != 1 || desired_mag <= 0.0)
+            {
+                printf("Desired field magnitude must be positive.\n");
+                continue;
+            }
+
+            double dist = calculate_shortest_distance(charge_id - 1, desired_mag);
+            if (dist < 0.0)
+            {
+                printf("Cannot calculate distance: charge value is zero.\n");
+            }
+            else
+            {
+                printf("\n--- Shortest Distance Result ---\n");
+                printf("Selected Charge: Charge %d (%+.4f microC at (%.4f, %.4f) m)\n",
+                       charge_id, charges_q[charge_id - 1], charges_x[charge_id - 1], charges_y[charge_id - 1]);
+                printf("Desired Field Magnitude: %.4e N/C\n", desired_mag);
+                printf("Shortest Distance from Charge: %.4f m\n", dist);
+            }
+        }
+        else if (choice == 6)
+        {
+            /* Option 6: Exit Module 2 */
+            printf("\nExiting Electric Field Calculator (Module 2). Returning control to caller.\n");
+            break;
+        }
+        else
+        {
+            printf("Invalid choice. Please select an option between 1 and 6.\n");
+        }
+    }
 }
