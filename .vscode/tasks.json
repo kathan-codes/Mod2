@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "C/C++: gcc build active file",
+            "command": "C:/msys64/ucrt64/bin/gcc.exe",
+            "args": [
+                "-Wall",
+                "-Wextra",
+                "-std=c99",
+                "${workspaceFolder}/propro.c",
+                "${workspaceFolder}/electric_field_calculator.c",
+                "-lm",
+                "-o",
+                "${workspaceFolder}/electric_field_calculator.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compile both propro.c and electric_field_calculator.c together"
+        }
+    ]
+}
+
