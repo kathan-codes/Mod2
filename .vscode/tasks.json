@@ -10,7 +10,7 @@
                 "-Wextra",
                 "-std=c99",
                 "${workspaceFolder}/propro.c",
-                "${workspaceFolder}/electric_field_calculator.c",
+                "${workspaceFolder}/electric_field.c",
                 "-lm",
                 "-o",
                 "${workspaceFolder}/electric_field_calculator.exe"
