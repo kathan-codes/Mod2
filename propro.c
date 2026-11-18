@@ -1,9 +1,6 @@
 #include <stdio.h>
 
-#define MAX_GRID_SIZE 100
 
-/* Forward declaration for Module 2: Electric Field Calculator */
-void run_electric_field_calculator(int n, const double q[], const double x[], const double y[]);
 
 int main()
 {
@@ -11,11 +8,7 @@ int main()
     
     // Number of charges
     printf("Enter number of charges: ");
-    if (scanf("%d", &n) != 1 || n <= 0)
-    {
-        printf("Invalid number of charges.\n");
-        return 1;
-    }
+    scanf("%d", &n);
 
     double q[n];
     double x[n], y[n];
@@ -41,13 +34,10 @@ int main()
     scanf("%d", &gridSize);
 
     if (gridSize < 1 || gridSize > MAX_GRID_SIZE)
-    {
+     {
         printf("Invalid grid size.\n");
         return 1;
     }
-
-    // Pass data directly to Module 2 (Electric Field Calculator)
-    run_electric_field_calculator(n, q, x, y);
 
     return 0;
 }
