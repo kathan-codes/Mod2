@@ -4,75 +4,37 @@
  * File: electric_field.c
  *
  * Description:
- * Single-file implementation of Module 2 integrated with the new ChargeConfig
- * interface from Module 1 (charge_config.h).
- *
- * Calculates individual electric fields, resultant field, external field
- * superposition, reference point recalculations, and shortest distance for
- * target field magnitude. All shared structures, variables and functions are
- * public (non-static) so other modules can access them directly.
+ * Implementation of Module 2 Electric Field Calculator.
+ * Calculates individual electric fields, charge-only resultant,
+ * external uniform field superposition, reference point updates,
+ * and shortest distance to a target field circle.
  */
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
-#include "charge_config.h"
+#include "electric_field.h"
 
-/* Physical constants for dry air (20 deg C, 101.325 kPa) */
-#define EPS0 8.8541878188e-12      /* Vacuum permittivity in F/m */
-#define EPS_R 1.0005364            /* Relative permittivity of dry air */
-#define PI 3.14159265358979323846  /* Pi constant */
-
-/*
- * Structure to store electric field results:
- * Ex, Ey: field components in N/C
- * magnitude: field magnitude in N/C
- * angle: counterclockwise angle [0, 360) deg from +X axis (-1 if undefined)
- * defined: 1 if field is valid, 0 if undefined (e.g. coincident charge)
- */
-typedef struct
-{
-    double Ex;
-    double Ey;
-    double magnitude;
-    double angle;
-    int defined;
-} ElectricFieldResult;
-
-/* Globally accessible array for individual charge results (0-indexed: Charge 1 at index 0) */
+/* Globally accessible result variables defined here */
 ElectricFieldResult chargeField[MAX_CHARGES];
-
-/* Globally accessible variables for resultant, external, and net fields */
 ElectricFieldResult resultantField;
 ElectricFieldResult externalField;
 ElectricFieldResult netField;
 
-/* Current reference point coordinates (in metres) */
-double ref_x = 0.0;
-double ref_y = 0.0;
+/* Current reference-point coordinates in metres */
+double referenceX = 0.0;
+double referenceY = 0.0;
 
 /* Stored charge configuration received from Module 1 */
 ChargeConfig currentConfig;
 
-/* Function prototypes (all public / non-static) */
-double calculate_coulomb_constant(void);
-double calculate_angle(double ex, double ey);
-void update_net_field(void);
-void calculate_electric_field(const ChargeConfig *config, double rx, double ry);
-void change_reference_point(double new_x, double new_y);
-void set_external_field(double ex, double ey);
-void clear_external_field(void);
-double calculate_shortest_distance(int charge_index, double desired_magnitude);
-void display_results(void);
-void run_electric_field_calculator(const ChargeConfig *config);
-
 /*
  * Calculates Coulomb's constant in dry air:
- * k = 1 / (4 * PI * EPS0 * EPS_R)
+ * k = 1 / (4 * PI * EPS0 * EPS_R_AIR)
  */
 double calculate_coulomb_constant(void)
 {
-    return 1.0 / (4.0 * PI * EPS0 * EPS_R);
+    return 1.0 / (4.0 * PI * EPS0 * EPS_R_AIR);
 }
 
 /*
@@ -148,8 +110,8 @@ void calculate_electric_field(const ChargeConfig *config, double rx, double ry)
     }
 
     currentConfig = *config;
-    ref_x = rx;
-    ref_y = ry;
+    referenceX = rx;
+    referenceY = ry;
 
     double k = calculate_coulomb_constant();
     double total_ex = 0.0;
@@ -159,7 +121,7 @@ void calculate_electric_field(const ChargeConfig *config, double rx, double ry)
     for (int i = 0; i < currentConfig.n; i++)
     {
         /* Check if charge coincides with reference point (distance is zero) */
-        if (currentConfig.x[i] == ref_x && currentConfig.y[i] == ref_y)
+        if (currentConfig.x[i] == referenceX && currentConfig.y[i] == referenceY)
         {
             chargeField[i].Ex = 0.0;
             chargeField[i].Ey = 0.0;
@@ -169,8 +131,8 @@ void calculate_electric_field(const ChargeConfig *config, double rx, double ry)
             continue;
         }
 
-        double dx = ref_x - currentConfig.x[i];
-        double dy = ref_y - currentConfig.y[i];
+        double dx = referenceX - currentConfig.x[i];
+        double dy = referenceY - currentConfig.y[i];
         double r = hypot(dx, dy);
 
         /* Charge q is directly in Coulombs (C) */
@@ -246,9 +208,12 @@ void clear_external_field(void)
 }
 
 /*
- * Public function: Calculates shortest radial distance (in metres) from selected
- * charge (0-based index) where its electric field magnitude equals desired_magnitude.
- * Formula: E = k * |q| / r^2  =>  r = sqrt(k * |q| / E).
+ * Public function: Calculates shortest distance from the current reference point
+ * to a location where the selected charge's electric field magnitude equals desired_magnitude.
+ * Formula:
+ *   r_target = sqrt(k * |q| / E_target)
+ *   d = sqrt((x_r - x_q)^2 + (y_r - y_q)^2)
+ *   d_shortest = |d - r_target|
  * Excludes other charges and external field. Returns -1.0 if invalid.
  */
 double calculate_shortest_distance(int charge_index, double desired_magnitude)
@@ -265,7 +230,12 @@ double calculate_shortest_distance(int charge_index, double desired_magnitude)
     }
 
     double k = calculate_coulomb_constant();
-    return sqrt((k * q_coulombs) / desired_magnitude);
+    double r_target = sqrt((k * q_coulombs) / desired_magnitude);
+    double dx = referenceX - currentConfig.x[charge_index];
+    double dy = referenceY - currentConfig.y[charge_index];
+    double d = hypot(dx, dy);
+
+    return fabs(d - r_target);
 }
 
 /*
@@ -276,7 +246,7 @@ void display_results(void)
     printf("\n===============================================================\n");
     printf("                  ELECTRIC FIELD RESULTS                       \n");
     printf("===============================================================\n");
-    printf("Reference Point: (%.4f, %.4f) m\n\n", ref_x, ref_y);
+    printf("Reference Point: (%.4f, %.4f) m\n\n", referenceX, referenceY);
     printf("--- Individual Charge Contributions ---\n");
 
     for (int i = 0; i < currentConfig.n; i++)
@@ -399,10 +369,7 @@ void run_electric_field_calculator(const ChargeConfig *config)
     /* Repeating interactive menu */
     while (1)
     {
-        printf("\n=================================================\n");
-        printf("             ELECTRIC FIELD CALCULATOR\n");
-        printf("=================================================\n\n");
-        printf("Current Reference Point: (%.4f, %.4f)\n\n", ref_x, ref_y);
+        printf("\n===== ELECTRIC FIELD CALCULATOR =====\n\n");
         printf("1. Display Electric Field Results\n");
         printf("2. Change Reference Point\n");
         printf("3. Set / Change External Electric Field\n");
@@ -424,7 +391,7 @@ void run_electric_field_calculator(const ChargeConfig *config)
                 printf("\nInput ended (EOF). Exiting Module 2.\n");
                 break;
             }
-            printf("Invalid input. Please enter a number between 1 and 6.\n");
+            printf("Invalid choice. Please enter a number between 1 and 6.\n");
             continue;
         }
 
@@ -497,8 +464,9 @@ void run_electric_field_calculator(const ChargeConfig *config)
                 printf("Selected Charge: Charge %d (q = %.6g C at (%.4f, %.4f) m)\n",
                        charge_id, currentConfig.q[charge_id - 1],
                        currentConfig.x[charge_id - 1], currentConfig.y[charge_id - 1]);
+                printf("Current Reference Point: (%.4f, %.4f) m\n", referenceX, referenceY);
                 printf("Desired Field Magnitude: %.4e N/C\n", desired_mag);
-                printf("Shortest Distance from Charge: %.4f m\n", dist);
+                printf("Shortest Distance to Target-Field Location: %.4f m\n", dist);
             }
         }
         else if (choice == 6)
