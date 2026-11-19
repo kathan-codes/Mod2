@@ -1,74 +1,70 @@
 /*
- * Module 2: Electric Field Calculator (Interactive Version)
+ * Module 2: Electric Field Calculator
  * Course: IC103 Programming Project
  * File: electric_field.c
  *
  * Description:
- * Rebuilt single-file interactive implementation of Module 2.
+ * Single-file implementation of Module 2 integrated with the new ChargeConfig
+ * interface from Module 1 (charge_config.h).
+ *
  * Calculates individual electric fields, resultant field, external field
- * superposition, reference point recalculations, and shortest distance
- * for target field magnitude. All shared arrays and functions are public
- * (non-static) so other modules can access them directly.
+ * superposition, reference point recalculations, and shortest distance for
+ * target field magnitude. All shared structures, variables and functions are
+ * public (non-static) so other modules can access them directly.
  */
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include "charge_config.h"
 
 /* Physical constants for dry air (20 deg C, 101.325 kPa) */
 #define EPS0 8.8541878188e-12      /* Vacuum permittivity in F/m */
 #define EPS_R 1.0005364            /* Relative permittivity of dry air */
 #define PI 3.14159265358979323846  /* Pi constant */
-#define MAX_CHARGES 100            /* Maximum supported charges */
 
-/* Globally accessible arrays for individual charge results (0-indexed: Charge 1 at index 0) */
-double Ex[MAX_CHARGES];
-double Ey[MAX_CHARGES];
-double E_magnitude[MAX_CHARGES];
-double E_angle[MAX_CHARGES];
-int E_defined[MAX_CHARGES];
+/*
+ * Structure to store electric field results:
+ * Ex, Ey: field components in N/C
+ * magnitude: field magnitude in N/C
+ * angle: counterclockwise angle [0, 360) deg from +X axis (-1 if undefined)
+ * defined: 1 if field is valid, 0 if undefined (e.g. coincident charge)
+ */
+typedef struct
+{
+    double Ex;
+    double Ey;
+    double magnitude;
+    double angle;
+    int defined;
+} ElectricFieldResult;
 
-/* Stored charge configuration received from Module 1 */
-int num_charges = 0;
-double charges_q[MAX_CHARGES];
-double charges_x[MAX_CHARGES];
-double charges_y[MAX_CHARGES];
+/* Globally accessible array for individual charge results (0-indexed: Charge 1 at index 0) */
+ElectricFieldResult chargeField[MAX_CHARGES];
+
+/* Globally accessible variables for resultant, external, and net fields */
+ElectricFieldResult resultantField;
+ElectricFieldResult externalField;
+ElectricFieldResult netField;
 
 /* Current reference point coordinates (in metres) */
 double ref_x = 0.0;
 double ref_y = 0.0;
 
-/* Globally accessible variables for final charge-only resultant field */
-double final_Ex = 0.0;
-double final_Ey = 0.0;
-double final_magnitude = 0.0;
-double final_angle = 0.0;
-int final_defined = 0;
+/* Stored charge configuration received from Module 1 */
+ChargeConfig currentConfig;
 
-/* Globally accessible variables for external electric field */
-double ext_Ex = 0.0;
-double ext_Ey = 0.0;
-int ext_active = 0;
-
-/* Globally accessible variables for final net electric field (charges + external) */
-double net_Ex = 0.0;
-double net_Ey = 0.0;
-double net_magnitude = 0.0;
-double net_angle = 0.0;
-int net_defined = 0;
-
-/* Function prototypes (all non-static / public) */
+/* Function prototypes (all public / non-static) */
 double calculate_coulomb_constant(void);
-double calculate_angle(double ex, double ey, int *is_defined);
+double calculate_angle(double ex, double ey);
 void update_net_field(void);
-void calculate_electric_field(int n, const double q[], const double x[], const double y[], double rx, double ry);
+void calculate_electric_field(const ChargeConfig *config, double rx, double ry);
 void change_reference_point(double new_x, double new_y);
 void set_external_field(double ex, double ey);
 void clear_external_field(void);
 double calculate_shortest_distance(int charge_index, double desired_magnitude);
-double calculate_shortest_distance_by_id(int charge_id, double desired_magnitude);
 void display_results(void);
-void run_electric_field_calculator(int n, const double q[], const double x[], const double y[]);
+void run_electric_field_calculator(const ChargeConfig *config);
 
 /*
  * Calculates Coulomb's constant in dry air:
@@ -81,18 +77,16 @@ double calculate_coulomb_constant(void)
 
 /*
  * Calculates counterclockwise angle in degrees [0, 360) from +X axis.
- * Sets *is_defined to 0 if magnitude is zero (undefined direction).
+ * Returns -1.0 if magnitude is zero (direction is undefined).
  */
-double calculate_angle(double ex, double ey, int *is_defined)
+double calculate_angle(double ex, double ey)
 {
     double mag = hypot(ex, ey);
     if (mag <= 1e-15)
     {
-        *is_defined = 0;
-        return 0.0;
+        return -1.0; /* Undefined direction for zero field vector */
     }
 
-    *is_defined = 1;
     double angle = atan2(ey, ex) * (180.0 / PI);
     if (angle < 0.0)
     {
@@ -102,6 +96,10 @@ double calculate_angle(double ex, double ey, int *is_defined)
     {
         angle -= 360.0;
     }
+    if (fabs(angle) < 1e-12)
+    {
+        angle = 0.0;
+    }
     return angle;
 }
 
@@ -110,141 +108,140 @@ double calculate_angle(double ex, double ey, int *is_defined)
  */
 void update_net_field(void)
 {
-    if (final_defined)
+    if (resultantField.defined)
     {
-        net_Ex = final_Ex + ext_Ex;
-        net_Ey = final_Ey + ext_Ey;
-        net_magnitude = hypot(net_Ex, net_Ey);
-        net_angle = calculate_angle(net_Ex, net_Ey, &net_defined);
+        netField.Ex = resultantField.Ex + externalField.Ex;
+        netField.Ey = resultantField.Ey + externalField.Ey;
+        netField.magnitude = hypot(netField.Ex, netField.Ey);
+        netField.angle = calculate_angle(netField.Ex, netField.Ey);
+        netField.defined = 1;
     }
-    else if (ext_active)
+    else if (externalField.defined)
     {
-        net_Ex = ext_Ex;
-        net_Ey = ext_Ey;
-        net_magnitude = hypot(net_Ex, net_Ey);
-        net_angle = calculate_angle(net_Ex, net_Ey, &net_defined);
+        netField.Ex = externalField.Ex;
+        netField.Ey = externalField.Ey;
+        netField.magnitude = externalField.magnitude;
+        netField.angle = externalField.angle;
+        netField.defined = 1;
     }
     else
     {
-        net_Ex = 0.0;
-        net_Ey = 0.0;
-        net_magnitude = 0.0;
-        net_angle = 0.0;
-        net_defined = 0;
+        netField.Ex = 0.0;
+        netField.Ey = 0.0;
+        netField.magnitude = 0.0;
+        netField.angle = -1.0;
+        netField.defined = 0;
     }
 }
 
 /*
- * Calculates individual electric fields and resultant for n charges at (rx, ry).
- * Updates Ex[], Ey[], E_magnitude[], E_angle[], E_defined[],
- * and updates final resultant and net fields.
+ * Calculates individual electric fields and charge-only resultant for charges at (rx, ry).
+ * Updates chargeField[], resultantField, and netField.
  */
-void calculate_electric_field(int n, const double q[], const double x[], const double y[], double rx, double ry)
+void calculate_electric_field(const ChargeConfig *config, double rx, double ry)
 {
-    if (n <= 0 || q == NULL || x == NULL || y == NULL)
+    if (config == NULL || config->n <= 0)
     {
-        num_charges = 0;
-        final_defined = 0;
-        net_defined = 0;
+        resultantField.defined = 0;
+        netField.defined = 0;
         return;
     }
 
-    num_charges = (n > MAX_CHARGES) ? MAX_CHARGES : n;
+    currentConfig = *config;
     ref_x = rx;
     ref_y = ry;
-
-    for (int i = 0; i < num_charges; i++)
-    {
-        charges_q[i] = q[i];
-        charges_x[i] = x[i];
-        charges_y[i] = y[i];
-    }
 
     double k = calculate_coulomb_constant();
     double total_ex = 0.0;
     double total_ey = 0.0;
-    int valid_charge_count = 0;
+    int valid_count = 0;
 
-    for (int i = 0; i < num_charges; i++)
+    for (int i = 0; i < currentConfig.n; i++)
     {
-        /* Coincident charge: field is undefined at the point charge location */
-        if (charges_x[i] == ref_x && charges_y[i] == ref_y)
+        /* Check if charge coincides with reference point (distance is zero) */
+        if (currentConfig.x[i] == ref_x && currentConfig.y[i] == ref_y)
         {
-            Ex[i] = 0.0;
-            Ey[i] = 0.0;
-            E_magnitude[i] = 0.0;
-            E_angle[i] = 0.0;
-            E_defined[i] = 0;
+            chargeField[i].Ex = 0.0;
+            chargeField[i].Ey = 0.0;
+            chargeField[i].magnitude = 0.0;
+            chargeField[i].angle = -1.0;
+            chargeField[i].defined = 0;
             continue;
         }
 
-        double dx = ref_x - charges_x[i];
-        double dy = ref_y - charges_y[i];
+        double dx = ref_x - currentConfig.x[i];
+        double dy = ref_y - currentConfig.y[i];
         double r = hypot(dx, dy);
 
-        /* Convert microcoulombs to coulombs */
-        double q_coulombs = charges_q[i] * 1e-6;
+        /* Charge q is directly in Coulombs (C) */
+        double q_coulombs = currentConfig.q[i];
 
-        /* E = k * q / r^2 in direction of r vector (dx/r, dy/r) => k * q * dx / r^3 */
+        /* E = k * q / r^2 along r vector (dx/r, dy/r) => k * q * dx / r^3 */
         double r3 = r * r * r;
-        Ex[i] = (k * q_coulombs * dx) / r3;
-        Ey[i] = (k * q_coulombs * dy) / r3;
-        E_magnitude[i] = hypot(Ex[i], Ey[i]);
-        E_angle[i] = calculate_angle(Ex[i], Ey[i], &E_defined[i]);
+        chargeField[i].Ex = (k * q_coulombs * dx) / r3;
+        chargeField[i].Ey = (k * q_coulombs * dy) / r3;
+        chargeField[i].magnitude = hypot(chargeField[i].Ex, chargeField[i].Ey);
+        chargeField[i].angle = calculate_angle(chargeField[i].Ex, chargeField[i].Ey);
+        chargeField[i].defined = 1;
 
-        total_ex += Ex[i];
-        total_ey += Ey[i];
-        valid_charge_count++;
+        total_ex += chargeField[i].Ex;
+        total_ey += chargeField[i].Ey;
+        valid_count++;
     }
 
-    /* Final resultant field due to charges */
-    final_Ex = total_ex;
-    final_Ey = total_ey;
-    if (valid_charge_count == 0)
+    /* Charge-only resultant field */
+    resultantField.Ex = total_ex;
+    resultantField.Ey = total_ey;
+
+    if (valid_count == 0)
     {
-        final_magnitude = 0.0;
-        final_angle = 0.0;
-        final_defined = 0;
+        resultantField.magnitude = 0.0;
+        resultantField.angle = -1.0;
+        resultantField.defined = 0;
     }
     else
     {
-        final_magnitude = hypot(final_Ex, final_Ey);
-        final_angle = calculate_angle(final_Ex, final_Ey, &final_defined);
+        resultantField.magnitude = hypot(total_ex, total_ey);
+        resultantField.angle = calculate_angle(total_ex, total_ey);
+        resultantField.defined = 1;
     }
 
-    /* Update net field with external field */
+    /* Superimpose with external field to update netField */
     update_net_field();
 }
 
 /*
- * Public function: Changes reference point and recalculates fields
- * using stored charges. Preserves existing external field.
+ * Public function: Changes reference point and recalculates all fields.
+ * Preserves the existing external field.
  */
 void change_reference_point(double new_x, double new_y)
 {
-    calculate_electric_field(num_charges, charges_q, charges_x, charges_y, new_x, new_y);
+    calculate_electric_field(&currentConfig, new_x, new_y);
 }
 
 /*
- * Public function: Sets or changes external electric field by component values (Ex, Ey in N/C).
- * Replaces any existing external field.
+ * Public function: Sets or replaces the external electric field (Ex, Ey in N/C).
  */
 void set_external_field(double ex, double ey)
 {
-    ext_Ex = ex;
-    ext_Ey = ey;
-    ext_active = (hypot(ex, ey) > 1e-15);
+    externalField.Ex = ex;
+    externalField.Ey = ey;
+    externalField.magnitude = hypot(ex, ey);
+    externalField.angle = calculate_angle(ex, ey);
+    externalField.defined = (externalField.magnitude > 1e-15) ? 1 : 0;
     update_net_field();
 }
 
 /*
- * Public function: Clears the external electric field.
+ * Public function: Clears the external electric field and resets its components to zero.
  */
 void clear_external_field(void)
 {
-    ext_Ex = 0.0;
-    ext_Ey = 0.0;
-    ext_active = 0;
+    externalField.Ex = 0.0;
+    externalField.Ey = 0.0;
+    externalField.magnitude = 0.0;
+    externalField.angle = -1.0;
+    externalField.defined = 0;
     update_net_field();
 }
 
@@ -252,16 +249,16 @@ void clear_external_field(void)
  * Public function: Calculates shortest radial distance (in metres) from selected
  * charge (0-based index) where its electric field magnitude equals desired_magnitude.
  * Formula: E = k * |q| / r^2  =>  r = sqrt(k * |q| / E).
- * Excludes external field and other charges. Returns -1.0 if invalid.
+ * Excludes other charges and external field. Returns -1.0 if invalid.
  */
 double calculate_shortest_distance(int charge_index, double desired_magnitude)
 {
-    if (charge_index < 0 || charge_index >= num_charges || desired_magnitude <= 0.0)
+    if (charge_index < 0 || charge_index >= currentConfig.n || desired_magnitude <= 0.0)
     {
         return -1.0;
     }
 
-    double q_coulombs = fabs(charges_q[charge_index]) * 1e-6;
+    double q_coulombs = fabs(currentConfig.q[charge_index]);
     if (q_coulombs <= 0.0)
     {
         return -1.0;
@@ -269,14 +266,6 @@ double calculate_shortest_distance(int charge_index, double desired_magnitude)
 
     double k = calculate_coulomb_constant();
     return sqrt((k * q_coulombs) / desired_magnitude);
-}
-
-/*
- * Convenience function: Same as calculate_shortest_distance using 1-based charge ID (1, 2, ...).
- */
-double calculate_shortest_distance_by_id(int charge_id, double desired_magnitude)
-{
-    return calculate_shortest_distance(charge_id - 1, desired_magnitude);
 }
 
 /*
@@ -290,52 +279,80 @@ void display_results(void)
     printf("Reference Point: (%.4f, %.4f) m\n\n", ref_x, ref_y);
     printf("--- Individual Charge Contributions ---\n");
 
-    for (int i = 0; i < num_charges; i++)
+    for (int i = 0; i < currentConfig.n; i++)
     {
-        if (E_defined[i])
+        printf("Charge %d (q = %.6g C at (%.4f, %.4f) m):\n",
+               i + 1, currentConfig.q[i], currentConfig.x[i], currentConfig.y[i]);
+
+        if (chargeField[i].defined)
         {
-            printf("Charge %d (%+.4f microC at (%.4f, %.4f) m):\n",
-                   i + 1, charges_q[i], charges_x[i], charges_y[i]);
-            printf("  Ex = %+.4e N/C\n", Ex[i]);
-            printf("  Ey = %+.4e N/C\n", Ey[i]);
-            printf("  Magnitude = %.4e N/C\n", E_magnitude[i]);
-            printf("  Angle = %.2f degrees\n\n", E_angle[i]);
+            printf("  Ex = %+.4e N/C\n", chargeField[i].Ex);
+            printf("  Ey = %+.4e N/C\n", chargeField[i].Ey);
+            printf("  Magnitude = %.4e N/C\n", chargeField[i].magnitude);
+            if (chargeField[i].angle >= 0.0)
+            {
+                printf("  Angle = %.2f degrees\n\n", chargeField[i].angle);
+            }
+            else
+            {
+                printf("  Angle = Undefined (zero magnitude)\n\n");
+            }
         }
         else
         {
-            printf("Charge %d (%+.4f microC at (%.4f, %.4f) m):\n",
-                   i + 1, charges_q[i], charges_x[i], charges_y[i]);
-            printf("  Field Undefined (coincides with reference point)\n\n");
+            printf("  Field is Undefined (charge coincides with reference point)\n\n");
         }
     }
 
     printf("--- Charge-only Resultant Field ---\n");
-    if (final_defined)
+    if (resultantField.defined)
     {
-        printf("  Ex = %+.4e N/C\n", final_Ex);
-        printf("  Ey = %+.4e N/C\n", final_Ey);
-        printf("  Magnitude = %.4e N/C\n", final_magnitude);
-        printf("  Angle = %.2f degrees\n", final_angle);
+        printf("  Ex = %+.4e N/C\n", resultantField.Ex);
+        printf("  Ey = %+.4e N/C\n", resultantField.Ey);
+        printf("  Magnitude = %.4e N/C\n", resultantField.magnitude);
+        if (resultantField.angle >= 0.0)
+        {
+            printf("  Angle = %.2f degrees\n", resultantField.angle);
+        }
+        else
+        {
+            printf("  Angle = Undefined (zero magnitude)\n");
+        }
     }
     else
     {
-        printf("  Field is Undefined (all charges coincident or undefined)\n");
+        printf("  Field is Undefined (all charges coincident with reference point)\n");
     }
 
-    if (ext_active)
+    if (externalField.defined)
     {
         printf("\n--- External Electric Field ---\n");
-        printf("  Ex = %+.4e N/C\n", ext_Ex);
-        printf("  Ey = %+.4e N/C\n", ext_Ey);
-        printf("  Magnitude = %.4e N/C\n", hypot(ext_Ex, ext_Ey));
+        printf("  Ex = %+.4e N/C\n", externalField.Ex);
+        printf("  Ey = %+.4e N/C\n", externalField.Ey);
+        printf("  Magnitude = %.4e N/C\n", externalField.magnitude);
+        if (externalField.angle >= 0.0)
+        {
+            printf("  Angle = %.2f degrees\n", externalField.angle);
+        }
+        else
+        {
+            printf("  Angle = Undefined\n");
+        }
 
         printf("\n--- Final Net Field (Charges + External) ---\n");
-        if (net_defined)
+        if (netField.defined)
         {
-            printf("  Ex = %+.4e N/C\n", net_Ex);
-            printf("  Ey = %+.4e N/C\n", net_Ey);
-            printf("  Magnitude = %.4e N/C\n", net_magnitude);
-            printf("  Angle = %.2f degrees\n", net_angle);
+            printf("  Ex = %+.4e N/C\n", netField.Ex);
+            printf("  Ey = %+.4e N/C\n", netField.Ey);
+            printf("  Magnitude = %.4e N/C\n", netField.magnitude);
+            if (netField.angle >= 0.0)
+            {
+                printf("  Angle = %.2f degrees\n", netField.angle);
+            }
+            else
+            {
+                printf("  Angle = Undefined\n");
+            }
         }
         else
         {
@@ -346,19 +363,22 @@ void display_results(void)
 }
 
 /*
- * Public integration entry point called with charge data from Module 1.
- * Prompts for initial reference point, performs initial calculations,
- * and enters the repeating interactive menu until user selects Exit.
+ * Main public entry point for Module 2:
+ * Receives charge configuration directly from Module 1.
+ * Prompts for initial reference point and enters the repeating interactive menu.
  */
-void run_electric_field_calculator(int n, const double q[], const double x[], const double y[])
+void run_electric_field_calculator(const ChargeConfig *config)
 {
-    if (n <= 0 || q == NULL || x == NULL || y == NULL)
+    if (config == NULL || config->n <= 0)
     {
-        printf("Error: Invalid charge data received.\n");
+        printf("Error: Invalid charge configuration received.\n");
         return;
     }
 
-    /* Consume any leftover newline in stdin from Module 1's scanf */
+    /* Initialize external field to zero */
+    clear_external_field();
+
+    /* Flush any leftover characters in stdin */
     int ch;
     while ((ch = getchar()) != '\n' && ch != EOF)
     {
@@ -373,14 +393,14 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
     if (scanf("%lf", &ry) != 1) ry = 0.0;
 
     /* Initial calculation and display */
-    calculate_electric_field(n, q, x, y, rx, ry);
+    calculate_electric_field(config, rx, ry);
     display_results();
 
-    /* Repeating Interactive Menu Loop */
+    /* Repeating interactive menu */
     while (1)
     {
         printf("\n=================================================\n");
-        printf("             ELECTRIC FIELD CALCULATOR           \n");
+        printf("             ELECTRIC FIELD CALCULATOR\n");
         printf("=================================================\n\n");
         printf("Current Reference Point: (%.4f, %.4f)\n\n", ref_x, ref_y);
         printf("1. Display Electric Field Results\n");
@@ -394,10 +414,15 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
         int choice;
         if (scanf("%d", &choice) != 1)
         {
-            /* Discard invalid input to avoid infinite loop */
+            /* Handle non-numeric input or EOF to avoid infinite loops */
             while ((ch = getchar()) != '\n' && ch != EOF)
             {
                 /* discard */
+            }
+            if (ch == EOF)
+            {
+                printf("\nInput ended (EOF). Exiting Module 2.\n");
+                break;
             }
             printf("Invalid input. Please enter a number between 1 and 6.\n");
             continue;
@@ -405,13 +430,11 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
 
         if (choice == 1)
         {
-            /* Option 1: Display current results */
             display_results();
         }
         else if (choice == 2)
         {
-            /* Option 2: Change reference point */
-            double new_x, new_y;
+            double new_x = 0.0, new_y = 0.0;
             printf("\nEnter new reference point X coordinate (m): ");
             if (scanf("%lf", &new_x) != 1) new_x = 0.0;
             printf("Enter new reference point Y coordinate (m): ");
@@ -422,8 +445,7 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
         }
         else if (choice == 3)
         {
-            /* Option 3: Set / Change external electric field */
-            double ex, ey;
+            double ex = 0.0, ey = 0.0;
             printf("\nEnter external electric field Ex (N/C): ");
             if (scanf("%lf", &ex) != 1) ex = 0.0;
             printf("Enter external electric field Ey (N/C): ");
@@ -435,24 +457,22 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
         }
         else if (choice == 4)
         {
-            /* Option 4: Clear external electric field */
             clear_external_field();
             printf("\nExternal electric field cleared.\n");
             display_results();
         }
         else if (choice == 5)
         {
-            /* Option 5: Calculate shortest distance for target field */
             printf("\nAvailable charges:\n");
-            for (int i = 0; i < num_charges; i++)
+            for (int i = 0; i < currentConfig.n; i++)
             {
-                printf("  Charge %d: %+.4f microC at (%.4f, %.4f) m\n",
-                       i + 1, charges_q[i], charges_x[i], charges_y[i]);
+                printf("  Charge %d: q = %.6g C at (%.4f, %.4f) m\n",
+                       i + 1, currentConfig.q[i], currentConfig.x[i], currentConfig.y[i]);
             }
 
             int charge_id;
-            printf("Select charge number (1 to %d): ", num_charges);
-            if (scanf("%d", &charge_id) != 1 || charge_id < 1 || charge_id > num_charges)
+            printf("Select charge number (1 to %d): ", currentConfig.n);
+            if (scanf("%d", &charge_id) != 1 || charge_id < 1 || charge_id > currentConfig.n)
             {
                 printf("Invalid charge selection.\n");
                 continue;
@@ -474,15 +494,15 @@ void run_electric_field_calculator(int n, const double q[], const double x[], co
             else
             {
                 printf("\n--- Shortest Distance Result ---\n");
-                printf("Selected Charge: Charge %d (%+.4f microC at (%.4f, %.4f) m)\n",
-                       charge_id, charges_q[charge_id - 1], charges_x[charge_id - 1], charges_y[charge_id - 1]);
+                printf("Selected Charge: Charge %d (q = %.6g C at (%.4f, %.4f) m)\n",
+                       charge_id, currentConfig.q[charge_id - 1],
+                       currentConfig.x[charge_id - 1], currentConfig.y[charge_id - 1]);
                 printf("Desired Field Magnitude: %.4e N/C\n", desired_mag);
                 printf("Shortest Distance from Charge: %.4f m\n", dist);
             }
         }
         else if (choice == 6)
         {
-            /* Option 6: Exit Module 2 */
             printf("\nExiting Electric Field Calculator (Module 2). Returning control to caller.\n");
             break;
         }

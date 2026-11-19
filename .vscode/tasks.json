@@ -9,7 +9,7 @@
                 "-Wall",
                 "-Wextra",
                 "-std=c99",
-                "${workspaceFolder}/propro.c",
+                "${workspaceFolder}/charge_config.c",
                 "${workspaceFolder}/electric_field.c",
                 "-lm",
                 "-o",
@@ -25,8 +25,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Compile both propro.c and electric_field_calculator.c together"
+            "detail": "Compile both charge_config.c and electric_field.c together"
         }
     ]
 }
-
