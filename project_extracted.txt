@@ -1,0 +1,133 @@
+﻿LLM context:
+We are making the project using Antigravity, and your work is to do analysis of following data, and give efficient prompt that can do this work.
+Project Context:
+We are working on a programming project in which we have to simulate electric field and potential, we have decided to divide in 6 Modules
+1.charge configuration manager
+2.electric field calculator 
+3.electric potential calculator 
+4.2D  electric field mapper
+5. Equipotential mapper
+6. Result, reports and File Handling
+In which we are a team of 2 working on a separate module named electric field calculator.
+Professors instruction:
+Project for IC103 Definitions and Allocation. 
+This is as per the list of students I have divided into sections and lab groups. 
+If there is any discrepancy, meet me. 
+Read the instructions very carefully and follow them exactly
+Rules:
+1) The group sizes are between 9 and 12. I have tried to make teams so that all team members can be in the same lab slot.
+Each project should have at least 5 different nontrivial components. (We leave it to students to define the components/functionalities).
+Roughly 2 students each should take responsibility for one component. The entire team has the responsibility of integrating the components to make it a working project.  However, the students will be graded individually based on their presentation, explanation and understanding.
+2) You are not allowed to change teams or change project definitions.
+Have a meeting with your team members soon to finalize the functionalities and details.
+You have to submit an interim report on 20th October 2026 giving details of your project functionalities, individual team member responsibilities etc.
+So please start working as soon as possible. Talk to me or the TAs if you have questions regarding functionalities.
+The TA mentors will guide you throughout the project and also be your clients or devil's advocate. @TA s please interact frequently with teams assigned to you and check their progress.  
+2) Teams are allowed to use LLMs, GenAI tools and other online resources to make their codebase with proper citations.
+However, you will have to report all code generated using GenAI and your own code. Maintain a list of all prompts that you have used to assist you in your project.
+Your final pdf report must have a list of all prompts used by you with proper categorization and sequencing. How you have used GenAI in your project both for implementation and understanding will impact your score significantly. 
+The project will contribute to 40% of your lab course grade.  
+3) Your projects may require detailed design of functionalities, extensive use of file manipulations, C functionalities which will not be discussed in the classes or labs.
+So, there is a significant self-learning component involved again highlighting the importance of starting early.
+4) In the end students have to submit a pdf report containing the design of their project and overall implementation details.
+Also, you have to submit the final code. 
+Your final pdf report must have a list of all prompts used by you with proper categorization and sequencing. 
+ You can make changes till the final presentation, but we will take that into account while grading.
+You have to appear as a team for a demonstration in front of us and separately to the TAs and you will be marked on the basis of complexity and quality of project, the quality of design, understanding of the codebase, functionalities implemented and integration of code, coding learnt outside class material and documentation, proper use of GenAI functionalities etc.
+4) The code should be only using the C language. No other language including C++ is allowed.
+5) Timeline:
+ Project allocation (21st September 2026)
+ Interim Report (20th October 2026 noon). I will share a link
+ Project Final submission (20th November Midnight). I will share a link
+ Project presentations and evaluation (by faculty): (23rd November week) (Exact schedule will be announced later)
+Restriction:
+We have to use only C language.
+Do not use external APIs or Internet while demonstrating the project.
+Do not include random unrelated headerfiles.
+Do not create your own header file.
+You can use scientific notation.
+Input:
+(we are not taking the input from direct user in our module, we have made separate module for taking input and manage it (i.e. charge configuration manager Module), and foe not Module 1 is work in progress so we can’t take value from that module so we are working on a demo set.
+But i can provide u the information about what input they are planing to take from user
+Here we are taking input from user till he inter 0 in charge value
+Charge value in micro Coulombs
+Charge coordinate (x,y) in Metres
+Reference point
+Required Functions:
+Electric field calculator
+Ex calculation
+Ey calculation
+|E| calculation
+Angle theta bw +x axis and the resultant electric field in counter clockwise manner.
+Function for output 3.1.
+Function for output 3.2.
+Function for output 4..
+Output: 1. Charge by Charge Electric Field Breakdown (in Newton/Coulomb)2. Resultant Electric Field with Theta along the +X Axis(in degrees) counter clockwise manner.
+2.1. If Resultant Electric Field is zero then give output of angle as undefine.3. Ask the user if he/she wants to:
+3.1. Change the coordinates of the reference point(in meters).3.2. Add a Uniform Background Electric Field (in Newton/Coulomb) in any direction(in degree).  Calculate the Net Electric Field(in Newton/Coulomb) due to the Charges & the Uniform Background Electric Field.
+4. Find the distance (in meters) where a entered electric field (N/C) is reached due to the charge input taken by the user.
+Explanation of each output:
+Calculate Ex,Ey,|E|,theta for each point charge to reference point
+|E| and theta considering all Charges present in plan
+User
+If user change the reference point from what he gave before then we ask for new reference points coordinate (in meter) and then re calculate Ex, Ey, |E|, theta, net-electricfield due to all charges, theta of net-electric field
+If user wants to add an external existing electric field then ask user the value of the field (in Newton/coulomb) and theta(degree) with positive X axis
+Ask user to input electric field in (N/coulomb), and charge value in (micro coulomb) then, then calculate how far we have to go to archive that value of electric field due to the charge input from the user(from the reference point), if its not possible then dont throw error, tell user that its not archivable.
+Edge cases:
+Give output of theta as 90 degree if Ex becomes zero.
+Ignore the charge if the coordinate of charge and the coordinate of reference point are the same (i.e. distance between the charge and reference point is zero)
+In output 4, this is applicable for one charge only.
+Constant Values:1. kair8.9827109 Nm2/C2 2.  0=8.854187818810-12 F/m 3. 
+Angle rules
+Measure angles counterclockwise from the positive X axis. For any nonzero field vector, calculate the angle using both components and report it in the range 0° to less than 360°.
+Field components
+Reported angle
+Ex = 0 and Ey > 0
+90°
+Ex = 0 and Ey < 0
+270°
+Ex = 0 and Ey = 0, or the field is zero within the chosen tolerance
+Undefined
+Use these rules for the resultant field and for each individual charge’s field. For a zero check, use a documented tolerance; a suggested value is max(1e-12 N/C, 1e-12 × sum of individual field magnitudes).
+Inputs and module responsibilities
+The Module 1 team owns initial charge entry and the initial reference-point input. The electric-field calculator receives that data; it does not collect the initial charge list.
+The electric-field calculator owns follow-up prompts for changing the reference point, setting a uniform background field, and requesting output 4. For output 4, the user selects one charge from the supplied charge list if more than one charge is available.
+While the electric-field calculator is being developed on its own, use a clearly labeled demo data set. Do not import or call the Module 1 file yet. During integration, replace the demo data source with the agreed Module 1 interface. Keep the original charge data unchanged; store a working reference point separately. Agree on how the modules share function declarations and data while following the no-custom-header-file restriction.
+Individual charge results
+For each non-coincident charge, print its charge identifier, Ex, Ey, magnitude, and angle. Apply the same counterclockwise angle and undefined-angle rules stated above. Print the resultant charge-only components, magnitude, and angle separately.
+Charge coincident with the reference point
+A point charge’s field is undefined at its own coordinates. Follow the project convention by excluding a charge only when its coordinates exactly match the current reference point. Print a clear line such as:
+Charge 2: skipped because it coincides with the reference point; its field is undefined here.
+Calculate the charge-only result from the remaining charges and state how many were excluded. If all charges are excluded, report that the displayed zero is the sum from zero included charges under this project convention; do not imply the physical field at the coincident point is zero. This exclusion rule applies to field evaluation at that point only. Do not exclude that charge from output 4.
+Reference-point changes and background-field behavior
+Changing the reference point updates the working reference point and requires recalculating every charge’s field from the original charge data. An active uniform background field remains active because it is uniform. Add it once to the newly calculated charge-field resultant.
+Treat the background-field action as setting or replacing one active background field, not accumulating repeated copies. Entering a magnitude of zero removes the active background field. Show the charge-only result and, when a background field is active, the net result separately.
+Air model, units, and constants
+Model the project’s medium as dry, carbon-dioxide-free air at 20 °C and 101.325 kPa. Use these fixed approximations:
+(\varepsilon_0 = 8.8541878188 \times 10^{-12}\ \mathrm{F/m})
+(\varepsilon_{r,\text{air}} = 1.0005364)
+(k_{\text{air}} = 1/(4\pi\varepsilon_0\varepsilon_{r,\text{air}}) \approx 8.9827 \times 10^9\ \mathrm{N,m^2/C^2})
+Convert charge once: q_C = q_microC × 1e-6
+Convert degrees to radians using radians = degrees × PI / 180, with a portable PI definition rather than relying on a compiler-specific constant.
+For a charge (q) at ((x_q,y_q)), calculate its field at ((x,y)) using:
+E = k_air × q_C × (dx, dy) / r³
+where dx = x - xq, dy = y - yq, and r = sqrt(dx² + dy²). Do not evaluate this formula when r is zero; apply the coincident-charge rule instead.
+Output 4: nearest distance to the target-field location
+Output 4 uses one selected, nonzero point charge and excludes the background field. The target field is a nonnegative magnitude in N/C. For a positive target (E_t), calculate the radius of the target-field circle around the selected charge:
+target_radius = sqrt(k_air × abs(q_C) / E_t)
+Let d be the distance from the charge to the current reference point. Report:
+shortest_distance = abs(d - target_radius)
+This is the shortest distance from the reference point to any location where the selected charge’s field magnitude equals the target. If the reference point is at the charge, the shortest distance is the target radius; no unique direction exists, but the distance is still defined. If the reference point lies on the target-field circle, report zero. If a closest point is displayed and the reference point is not at the charge, it lies on the line between the charge and reference point.
+A negative target field is invalid. A zero target field has no finite matching location for a nonzero point charge. A zero charge cannot produce a positive target field.
+Numeric representation and display
+Keep values as numeric data during calculations; do not turn printed results into calculation inputs. Scientific notation is allowed for displayed output. Use consistent units and precision. Persistent file storage belongs to the project’s file-handling module; this calculator should not store formatted output strings as numeric state.
+Failure behavior
+Reject malformed, non-finite, or out-of-range numeric input and prompt again without getting stuck on the same invalid text.
+If input ends while a prompt is active, cancel that action cleanly and return to the menu or exit; never reuse the previous input value.
+For an invalid menu choice, show the valid choices and ask again.
+Treat the Module 1 zero-charge sentinel as the end of its charge list; do not store it as a charge.
+If the charge list is empty, report a zero charge-only field with an undefined angle. If a background field is active, the net field is that background field.
+Reject a negative background-field magnitude. Accept any finite angle and normalize it to the stated angle range.
+If a selected charge is missing or invalid for output 4, ask the user to select a valid charge again.
+If a calculation produces a non-finite result or exceeds the supported numeric range, report a calculation-range error; do not print NaN or infinity.
+If the integrated Module 1 data is unavailable, report that input is unavailable. Do not silently fall back to stale data or the demo set.

@@ -1,0 +1,231 @@
+﻿Electric Field Calculator (Module 2) Implementation Prompt
+1. Project Overview
+I am working on a multi-module C project for an Electric Field Calculator.
+My responsibility is Module 2 – Electric Field Calculator.
+Module 1 has already been developed by another team member. It is responsible for collecting and storing the initial charge information.
+Your task is to develop Module 2 and integrate it with the existing Module 1 code.
+IMPORTANT: Do not develop Module 1 again. Do not create a separate charge-input system. Build Module 2 around the data already provided by Module 1.
+The implementation must be:
+Written entirely in C.
+Simple and understandable for a first-year B.Tech student.
+Compatible with the existing project structure.
+Easy to explain during a college project demonstration.
+Properly integrated with Module 1.
+2. First Inspect the Existing Project
+Before writing or modifying any code:
+Inspect all existing project files.
+Identify the Module 1 implementation.
+Understand how Module 1 stores its charge information.
+Identify the existing variables, functions and data structures.
+Check the project's current main() function and compilation setup.
+Understand how the modules are expected to communicate.
+The supplied propro.c is the current Module 1 reference. Use the actual workspace as the source of truth if additional or updated files are available.
+Do not assume that variables declared inside Module 1 are automatically accessible to Module 2.
+If necessary, make the smallest reasonable changes to establish communication between the modules.
+Preserve Module 1's existing functionality.
+3. Module 1 Integration – Most Important Requirement
+Module 1 is responsible for providing:
+Number of charges.
+Charge values.
+X-coordinates of charges.
+Y-coordinates of charges.
+Initial reference point, if available.
+Module 2 must receive and use this information directly.
+Rules
+Do not ask the user to enter the number of charges again.
+Do not ask the user to enter charge values again.
+Do not ask the user to enter the coordinates of individual charges again.
+Do not create another charge-input section.
+Do not modify the original charge information while performing calculations.
+Use the original charge information whenever recalculating the electric field.
+If the initial reference point is not available from Module 1, ask the user to enter only the reference point required for Module 2.
+Integration approach
+Choose the simplest suitable C interface based on the existing project.
+For example, use a shared structure or a small set of functions to transfer the required data between modules.
+Avoid unnecessary architecture, complicated data handling and excessive additional files.
+Do not include one .c file inside another.
+Do not create a second competing main() function.
+If the current Module 1 code needs a small modification to expose its data, make that modification carefully and explain it.
+If integration is impossible because a required interface or information is missing, explain exactly what is missing instead of inventing data or silently using demonstration values.
+4. Main Functionality of Module 2
+After receiving the information from Module 1, Module 2 should calculate the electric field at the initial reference point.
+For every available charge, calculate:
+Electric field X-component (Ex).
+Electric field Y-component (Ey).
+Electric field magnitude.
+Electric field direction.
+After calculating individual contributions, calculate the resultant electric field due to all charges.
+Use the following equations.
+Electric field due to an individual charge
+Let:
+q = charge in Coulombs.
+(xq, yq) = charge coordinates.
+(x, y) = reference point.
+k = Coulomb's constant for the project's dry-air approximation.
+First calculate:
+dx = x - xq
+dy = y - yq
+r = sqrt(dx² + dy²)
+Then:
+Ex = k × q × dx / r³
+Ey = k × q × dy / r³
+Electric field magnitude:
+E = sqrt(Ex² + Ey²)
+Constants and units
+Use these project constants:
+Vacuum permittivity: 8.8541878188 × 10⁻¹² F/m
+Relative permittivity of air: 1.0005364
+Pi: 3.14159265358979323846
+Calculate:
+k = 1 / (4 × pi × epsilon0 × epsilon_r_air)
+Charge values received in microcoulombs must be converted into Coulombs before calculations.
+Coordinates and distances must be in metres.
+Electric field values must be in N/C.
+Preserve the positive or negative sign of each charge.
+Resultant electric field
+Calculate:
+Ex_total = Sum of all individual Ex values
+Ey_total = Sum of all individual Ey values
+E_total = sqrt(Ex_total² + Ey_total²)
+Calculate the direction using both components so that the correct quadrant is obtained.
+Angles must be measured counterclockwise from the positive X-axis and displayed between 0° and 360°.
+Special cases:
+Positive Y-axis: 90°.
+Negative Y-axis: 270°.
+Zero electric field: angle is undefined.
+Never display 90° automatically whenever Ex is zero.
+5. Handle Coincident Charges
+A charge may be located exactly at the reference point.
+In that situation, its electric field is undefined.
+Handle this condition safely:
+Do not divide by zero.
+Skip that charge only for the current field calculation.
+Display a short message explaining why it was skipped.
+Continue calculating the contributions of other charges.
+Show the number of skipped charges.
+Do not delete or modify the original charge information.
+If every charge is coincident with the reference point, display the zero sum over the included charges and clearly explain that the physical electric field is undefined at that point.
+6. Follow-up Menu
+After displaying the initial results, show the following menu:
+Change Reference Point
+Set / Change / Clear Background Electric Field
+Find Shortest Distance for a Target Electric Field (Output 4)
+Exit
+Allow the user to perform multiple operations until they select Exit.
+Option 1 – Change Reference Point
+Ask for the new X-coordinate.
+Ask for the new Y-coordinate.
+Recalculate the electric field using the original Module 1 charge information.
+Display the updated individual fields and resultant field.
+Do not modify the original charge coordinates.
+Do not reuse previous calculation results.
+Option 2 – Uniform Background Electric Field
+Allow the user to add a uniform background electric field.
+Ask for:
+Background field magnitude in N/C.
+Direction in degrees, measured counterclockwise from the positive X-axis.
+Calculate:
+Ex_bg = E_bg × cos(theta)
+Ey_bg = E_bg × sin(theta)
+Display the background field components separately.
+Calculate the net electric field:
+Ex_net = Ex_total + Ex_bg
+Ey_net = Ey_total + Ey_bg
+E_net = sqrt(Ex_net² + Ey_net²)
+Requirements:
+The background field must remain active after changing the reference point.
+Setting a new background field must replace the previous one.
+Entering zero magnitude must clear the background field.
+Do not add the background field more than once.
+Do not include the background field in Output 4.
+Option 3 – Output 4: Shortest Distance
+This feature calculates the shortest distance from the current reference point to a location where the electric field magnitude due to one selected charge equals the target electric field.
+Use only one nonzero charge from Module 1.
+Do not ask the user to enter charge values or charge coordinates again.
+If multiple nonzero charges are available, display their IDs and allow the user to select one.
+For the selected charge:
+target_radius = sqrt(k × abs(q) / E_target)
+Calculate the distance between the reference point and the selected charge:
+d = sqrt((xr - xq)² + (yr - yq)²)
+Shortest distance:
+shortest_distance = abs(d - target_radius)
+Display the shortest distance in metres.
+Special conditions:
+Negative target magnitude: reject it and ask again.
+Zero target magnitude: explain that no finite matching location exists.
+If the reference point is already on the target circle, the shortest distance is zero.
+If the reference point is at the charge location, the shortest distance equals the target radius.
+If no nonzero charge is available, explain that Output 4 cannot be performed.
+The background electric field must not affect this calculation.
+7. Input Validation and Calculation Safety
+Keep input validation straightforward.
+Ensure that:
+Invalid menu selections are rejected.
+Coordinates must be valid finite numbers.
+Background magnitude cannot be negative.
+Invalid target magnitudes are handled properly.
+Division by zero is avoided.
+Invalid calculations are not displayed as valid results.
+NaN and infinity are never displayed as calculation results.
+End-of-input is handled without an infinite loop.
+Previous values are not accidentally reused after invalid input.
+When a calculation cannot be performed safely, display a short and understandable error message.
+8. User Interface and Display
+Keep the console interface clean, organized and beginner-friendly.
+Use clear headings and readable output.
+Suggested output format:
+ELECTRIC FIELD CALCULATOR
+Initial Reference Point: (x, y) m
+Individual Charge Contributions:
+Charge 1Ex = ... N/CEy = ... N/CMagnitude = ... N/CAngle = ... degrees
+Charge 2Ex = ... N/CEy = ... N/CMagnitude = ... N/CAngle = ... degrees
+Charge-only Resultant:
+Ex = ... N/CEy = ... N/CMagnitude = ... N/CAngle = ... degrees
+Display the background and net electric field separately only when a background field is active.
+Avoid unnecessary repeated output.
+Do not print debugging information or implementation explanations during normal program execution.
+9. Coding Guidelines
+Follow these rules throughout the implementation:
+Use C only.
+Follow the existing project's C standard. If none is configured, use portable C99.
+Prefer basic C concepts that a first-year B.Tech student can understand.
+Use meaningful variable and function names.
+Add short comments wherever the calculation or logic needs explanation.
+Keep the code organized into small functions.
+Use standard C libraries only where required.
+Use math.h for mathematical operations.
+Avoid unnecessary structures, complicated pointers, advanced programming techniques and excessive abstraction.
+Do not introduce unrelated modules or features.
+Do not change the project's existing folder structure unnecessarily.
+Do not create unnecessary files.
+Do not add file storage, reports, graphical interfaces or field-mapping features.
+The final code should be easy for a first-year engineering student to read, understand, modify and explain.
+10. Scope Restrictions
+Implement only Module 2 and its integration with Module 1.
+Do not implement:
+Module 1's charge-management functionality again.
+Electric Potential Calculator.
+Electric Field Mapping.
+Equipotential Mapping.
+File Management or Report Generation.
+Any additional feature not mentioned in this prompt.
+Do not create automated test suites, test cases, test harnesses or separate testing modules.
+Focus on the actual implementation and successful integration.
+11. Compilation and Completion
+After implementation:
+Compile the integrated C project using the existing project build process.
+Resolve compilation errors caused by Module 2 or its integration.
+Check that Module 1 continues to work with its original functionality.
+Confirm that Module 2 receives the charge information from Module 1 without asking for it again.
+Confirm that the main calculations and menu operations work.
+Do not claim that something works unless it has actually been compiled or checked.
+Final handoff
+When finished, provide a concise report containing:
+Files created.
+Files modified.
+How Module 2 receives data from Module 1.
+Functions added and their purposes.
+How to compile and run the integrated project.
+Any remaining integration requirements.
+Also explain the implementation in simple language so that a first-year B.Tech student can understand how the code works.
+FINAL PRIORITY: Correct Module 1 integration, simple C implementation, accurate electric-field calculations and a clean working demonstration. Do not overcomplicate the project.
