@@ -278,8 +278,6 @@ int exportTXT(const ReportData *data, const char *filename)
 
     printf("Text report saved to %s\n", filename);
     return 1;
-    printf("Text report saved to %s\n", filename);
-    return 1;
 }
 
 int exportCSV(const ReportData *data, const char *filename)
@@ -355,8 +353,6 @@ int exportCSV(const ReportData *data, const char *filename)
 
     printf("Grid data exported to %s\n", filename);
     return 1;
-    printf("Grid data exported to %s\n", filename);
-    return 1;
 }
 
 void displayStatistics(const ReportData *data)
@@ -405,7 +401,7 @@ void displayStatistics(const ReportData *data)
     }
 
     printf("\n========== GRID FIELD STATISTICS ==========\n");
-    printf("Valid grid points : %zu\n", valid_count);
+    printf("Valid grid points : %lu\n", (unsigned long)valid_count);
     printf("Invalid grid points: %d\n",
            data->grid_width * data->grid_height - (int)valid_count);
 
