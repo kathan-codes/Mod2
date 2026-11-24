@@ -11,8 +11,8 @@
 #include <math.h>    /* sqrt, atan2 (link with -lm)          */
 
 /* ---------- Constants ---------- */
-#define MAXG 100              /* GUESS: maximum grid size              */
-#define K    8.9875517923e9   /* GUESS: Coulomb constant (N*m^2/C^2)   */
+#define MAXG 100              /* maximum grid size                     */
+#define K    8.98271086e9     /* Coulomb constant for dry air (N*m^2/C^2) */
 #define PI   3.14159265358979323846
 
 /* ---------- Data type ---------- */
