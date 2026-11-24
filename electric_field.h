@@ -6,7 +6,9 @@
 /* Physical constants for dry air (20 deg C, 101.325 kPa) */
 #define EPS0 8.8541878188e-12      /* Vacuum permittivity in F/m */
 #define EPS_R_AIR 1.0005364        /* Relative permittivity of dry air */
+#ifndef PI
 #define PI 3.14159265358979323846  /* Pi constant */
+#endif
 
 /*
  * Structure to store electric field results:
@@ -34,9 +36,6 @@ extern ElectricFieldResult netField;
 extern double referenceX;
 extern double referenceY;
 
-/* Number of charges coincident with current reference point (skipped from sum) */
-extern int skippedChargesCount;
-
 /* Public function prototypes */
 double calculate_coulomb_constant(void);
 double calculate_angle(double ex, double ey);
@@ -44,7 +43,6 @@ void update_net_field(void);
 void calculate_electric_field(const ChargeConfig *config, double rx, double ry);
 void change_reference_point(double new_x, double new_y);
 void set_external_field(double ex, double ey);
-void set_external_field_polar(double magnitude, double angle_deg);
 void clear_external_field(void);
 double calculate_shortest_distance(int charge_index, double desired_magnitude);
 void display_results(void);

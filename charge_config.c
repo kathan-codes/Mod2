@@ -109,6 +109,7 @@ void displayChargeConfiguration(const ChargeConfig *config) {
   printf("==========================================\n");
 }
 
+#if defined(STANDALONE_BUILD) && !defined(INTEGRATED_BUILD)
 #include "electric_field.h"
 
 int main(void) {
@@ -119,3 +120,4 @@ int main(void) {
   }
   return 0;
 }
+#endif
