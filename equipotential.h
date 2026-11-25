@@ -1,14 +1,7 @@
 #ifndef EQUIPOTENTIAL_H
 #define EQUIPOTENTIAL_H
 
-#if !defined(NO_RAYLIB)
 #include "raylib.h"
-#else
-typedef struct Vector2 {
-    float x;
-    float y;
-} Vector2;
-#endif
 
 #ifdef __cplusplus
 extern "C" {

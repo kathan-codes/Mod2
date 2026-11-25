@@ -80,7 +80,6 @@ void RunEquipotentialSimulation(void)
     const int ringCount =
         sizeof(ringFractions) / sizeof(ringFractions[0]);
 
-#if !defined(NO_RAYLIB)
     InitWindow(SCREEN_W, SCREEN_H, "Equipotential Circles");
     SetTargetFPS(60);
 
@@ -132,23 +131,6 @@ void RunEquipotentialSimulation(void)
     }
 
     CloseWindow();
-#else
-    printf("\n--- Equipotential Circles Summary (Module 5) ---\n");
-    printf("Simulated grid: %d columns x %d rows\n", columns, rows);
-    for (int i = 0; i < chargeCount; i++) {
-        Vector2 worldPos = ChargePosition(i, columns, rows);
-        printf("Charge %d: q = %+.3e C at (%.2f, %.2f) m\n", i + 1, charges[i], worldPos.x, worldPos.y);
-        if (maxCharge > 0.0f && charges[i] != 0.0f) {
-            float chargeRatio = fabsf(charges[i]) / maxCharge;
-            printf("  Equipotential ring radii:\n");
-            for (int ring = 0; ring < ringCount; ring++) {
-                float radiusWorld = largestRadius * ringFractions[ring] * chargeRatio;
-                printf("    Ring %d (%.0f%%): %.4f m\n", ring + 1, ringFractions[ring] * 100.0f, radiusWorld);
-            }
-        }
-    }
-    printf("------------------------------------------------\n");
-#endif
 }
 
 #if defined(STANDALONE_BUILD) && !defined(INTEGRATED_BUILD)

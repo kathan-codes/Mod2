@@ -36,18 +36,6 @@ int calculateTestChargePotentialEnergy(
 );
 
 /*
- * Alias for calculateTestChargePotentialEnergy.
- * Calculates potential energy at point (px, py) for a given test charge.
- */
-int calculatePotentialEnergyAtPoint(
-    const ChargeConfig *config,
-    double px,
-    double py,
-    double testCharge,
-    double *potentialEnergy
-);
-
-/*
  * Calculate the total electrostatic interaction energy of the configured
  * point charges, counting each pair once:
  * U = sum(i < j) [k * qi * qj / rij].
@@ -56,15 +44,6 @@ int calculatePotentialEnergyAtPoint(
 int calculateTotalPotentialEnergy(
     const ChargeConfig *config,
     double *totalPotentialEnergy
-);
-
-/*
- * Alias for calculateTotalPotentialEnergy.
- * Calculates the total electrostatic potential energy of the system of charges.
- */
-int calculateSystemPotentialEnergy(
-    const ChargeConfig *config,
-    double *systemPotentialEnergy
 );
 
 #endif

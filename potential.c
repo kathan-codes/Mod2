@@ -82,16 +82,6 @@ int calculateTestChargePotentialEnergy(
     return POTENTIAL_SUCCESS;
 }
 
-int calculatePotentialEnergyAtPoint(
-    const ChargeConfig *config,
-    double px,
-    double py,
-    double testCharge,
-    double *potentialEnergy)
-{
-    return calculateTestChargePotentialEnergy(config, px, py, testCharge, potentialEnergy);
-}
-
 
 /* MODULE 3: TOTAL INTERACTION ENERGY OF THE CHARGE CONFIGURATION */
 
@@ -144,11 +134,4 @@ int calculateTotalPotentialEnergy(
 
     *totalPotentialEnergy = total;
     return POTENTIAL_SUCCESS;
-}
-
-int calculateSystemPotentialEnergy(
-    const ChargeConfig *config,
-    double *systemPotentialEnergy)
-{
-    return calculateTotalPotentialEnergy(config, systemPotentialEnergy);
 }

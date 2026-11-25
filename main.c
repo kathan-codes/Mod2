@@ -249,16 +249,6 @@ static void run_complete_pipeline(ChargeConfig *config,
         printf("Electric Potential calculation error at (%.4f, %.4f) m.\n", rx, ry);
     }
 
-    /* Also report the total interaction energy of the configured source charges. */
-    double system_potential_energy = 0.0;
-    int system_energy_status = calculateTotalPotentialEnergy(config, &system_potential_energy);
-    if (system_energy_status == POTENTIAL_SUCCESS)
-        printf("Total source-charge interaction energy: %.6e J\n", system_potential_energy);
-    else if (system_energy_status == POTENTIAL_UNDEFINED)
-        printf("Total source-charge interaction energy: Undefined (coincident source charges).\n");
-    else
-        printf("Total source-charge interaction energy: Calculation error.\n");
-
     /* Step 4: 2D Electric Field Mapping (Module 4) */
     printf("\n[Step 4/6] 2D Electric Field Mapping (Module 4)...\n");
     Charge mapper_charges[MAX_CHARGES];
@@ -317,9 +307,6 @@ static void run_complete_pipeline(ChargeConfig *config,
  */
 int main(void)
 {
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stdin, NULL, _IONBF, 0);
-
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
@@ -360,7 +347,7 @@ int main(void)
         printf("-------------------------------------------------------------\n");
         printf("1. Charge Configuration          (Module 1)\n");
         printf("2. Electric Field Calculation    (Module 2)\n");
-        printf("3. Electric Potential & Energy   (Module 3)\n");
+        printf("3. Electric Potential Calculation (Module 3)\n");
         printf("4. 2D Electric Field Mapping     (Module 4)\n");
         printf("5. Equipotential Mapping         (Module 5)\n");
         printf("6. Results Management            (Module 6)\n");
@@ -410,79 +397,33 @@ int main(void)
                 break;
 
             case 3:
-                printf("\n--- Option 3: Electric Potential & Potential Energy (Module 3) ---\n");
+                printf("\n--- Option 3: Electric Potential Calculation (Module 3) ---\n");
                 if (!is_configured)
                 {
                     printf("No charges configured yet. Please configure charges first (Option 1).\n");
                     break;
                 }
                 {
-                    double px = 0.0, py = 0.0, testCharge = 0.0;
-                    double val = 0.0, testEnergy = 0.0, systemEnergy = 0.0;
-                    int potentialStatus, testEnergyStatus, systemEnergyStatus;
-
-                    printf("Enter observation point X coordinate (m): ");
-                    if (scanf("%lf", &px) != 1 || !isfinite(px))
-                    {
-                        flush_stdin();
-                        printf("Invalid X coordinate. Please enter a finite number.\n");
-                        break;
-                    }
-
-                    printf("Enter observation point Y coordinate (m): ");
-                    if (scanf("%lf", &py) != 1 || !isfinite(py))
-                    {
-                        flush_stdin();
-                        printf("Invalid Y coordinate. Please enter a finite number.\n");
-                        break;
-                    }
-
-                    printf("Enter external test charge (C) [e.g. 1e-9, -2e-6]: ");
-                    if (scanf("%lf", &testCharge) != 1 || !isfinite(testCharge))
-                    {
-                        flush_stdin();
-                        printf("Invalid test charge. Please enter a finite number.\n");
-                        break;
-                    }
+                    double px = 0.0, py = 0.0, val = 0.0;
+                    printf("Enter point X coordinate (m): ");
+                    if (scanf("%lf", &px) != 1) px = 0.0;
+                    printf("Enter point Y coordinate (m): ");
+                    if (scanf("%lf", &py) != 1) py = 0.0;
                     flush_stdin();
 
-                    /* Electric potential due to configured source charges */
-                    potentialStatus = calculatePotentialAtPoint(&config, px, py, &val);
-
-                    /* Potential energy of the external test charge: U = q0 * V */
-                    testEnergyStatus = calculateTestChargePotentialEnergy(
-                        &config, px, py, testCharge, &testEnergy);
-
-                    /* Mutual interaction energy of configured source charges */
-                    systemEnergyStatus = calculateTotalPotentialEnergy(
-                        &config, &systemEnergy);
-
-                    printf("\n========== POTENTIAL AND POTENTIAL ENERGY ==========\n");
-
-                    if (potentialStatus == POTENTIAL_SUCCESS)
-                        printf("Electric potential at (%.4f, %.4f) m = %.6e V\n", px, py, val);
-                    else if (potentialStatus == POTENTIAL_UNDEFINED)
-                        printf("Electric potential: UNDEFINED (point coincides with a source charge).\n");
+                    int st = calculatePotentialAtPoint(&config, px, py, &val);
+                    if (st == POTENTIAL_SUCCESS)
+                    {
+                        printf("\n>>> Potential at (%.4f, %.4f) m = %.6e V\n", px, py, val);
+                    }
+                    else if (st == POTENTIAL_UNDEFINED)
+                    {
+                        printf("\n>>> Point coincides with a charge. Potential is mathematically undefined.\n");
+                    }
                     else
-                        printf("Electric potential: CALCULATION ERROR (invalid input or numerical overflow).\n");
-
-                    if (testEnergyStatus == POTENTIAL_SUCCESS)
-                        printf("External test charge                 = %.6e C\n"
-                               "Test-charge potential energy, U = q0V = %.6e J\n",
-                               testCharge, testEnergy);
-                    else if (testEnergyStatus == POTENTIAL_UNDEFINED)
-                        printf("Test-charge potential energy: UNDEFINED (test point coincides with a source charge).\n");
-                    else
-                        printf("Test-charge potential energy: CALCULATION ERROR.\n");
-
-                    if (systemEnergyStatus == POTENTIAL_SUCCESS)
-                        printf("Total source-charge interaction energy = %.6e J\n", systemEnergy);
-                    else if (systemEnergyStatus == POTENTIAL_UNDEFINED)
-                        printf("Total source-charge interaction energy: UNDEFINED (two or more source charges occupy the same position).\n");
-                    else
-                        printf("Total source-charge interaction energy: CALCULATION ERROR.\n");
-
-                    printf("====================================================\n");
+                    {
+                        printf("\n>>> Calculation error or invalid point.\n");
+                    }
                 }
                 break;
 

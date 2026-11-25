@@ -183,6 +183,7 @@ void change_reference_point(double new_x, double new_y)
 
 /*
  * Public function: Sets or replaces the external electric field (Ex, Ey in N/C).
+ * Recalculates all electric fields with the new external field.
  */
 void set_external_field(double ex, double ey)
 {
@@ -190,12 +191,21 @@ void set_external_field(double ex, double ey)
     externalField.Ey = ey;
     externalField.magnitude = hypot(ex, ey);
     externalField.angle = calculate_angle(ex, ey);
-    externalField.defined = (externalField.magnitude > 1e-15) ? 1 : 0;
-    update_net_field();
+    externalField.defined = 1;
+
+    if (currentConfig.n > 0)
+    {
+        calculate_electric_field(&currentConfig, referenceX, referenceY);
+    }
+    else
+    {
+        update_net_field();
+    }
 }
 
 /*
  * Public function: Clears the external electric field and resets its components to zero.
+ * Recalculates all electric fields to remove external field contributions.
  */
 void clear_external_field(void)
 {
@@ -204,7 +214,15 @@ void clear_external_field(void)
     externalField.magnitude = 0.0;
     externalField.angle = -1.0;
     externalField.defined = 0;
-    update_net_field();
+
+    if (currentConfig.n > 0)
+    {
+        calculate_electric_field(&currentConfig, referenceX, referenceY);
+    }
+    else
+    {
+        update_net_field();
+    }
 }
 
 /*
